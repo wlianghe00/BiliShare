@@ -75,7 +75,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
     @Override
     protected void init() throws Exception {
         if (mTencent == null) {
-            mTencent = Tencent.createInstance(mAppId, getContext());
+            mTencent = Tencent.createInstance(mAppId, getContext().getApplicationContext());
         }
     }
 

@@ -38,7 +38,7 @@ import com.tencent.mm.sdk.openapi.WXAPIFactory;
 /**
  * @author Jungly
  * @email jungly.ik@gmail.com
- * @date 15/10/8
+ * @since 2015/10/8
  */
 public abstract class BaseWXEntryActivity extends Activity implements IWXAPIEventHandler {
 
@@ -67,7 +67,7 @@ public abstract class BaseWXEntryActivity extends Activity implements IWXAPIEven
     }
 
     private void initWXApi() {
-        mIWXAPI = WXAPIFactory.createWXAPI(this, getAppId(), true);
+        mIWXAPI = WXAPIFactory.createWXAPI(getApplicationContext(), getAppId(), true);
         if (mIWXAPI.isWXAppInstalled()) {
             mIWXAPI.registerApp(getAppId());
         }

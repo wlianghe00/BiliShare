@@ -108,7 +108,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
     @Override
     protected void init() throws Exception {
         if (mIWXAPI == null) {
-            mIWXAPI = WXAPIFactory.createWXAPI(getContext(), mAppId, true);
+            mIWXAPI = WXAPIFactory.createWXAPI(getContext().getApplicationContext(), mAppId, true);
             if (mIWXAPI.isWXAppInstalled()) {
                 mIWXAPI.registerApp(mAppId);
             }

@@ -101,7 +101,7 @@ public class SinaShareHandler extends BaseShareHandler {
     @Override
     public void init() throws Exception {
         //安装客户端后要重新创建实例
-        mWeiboShareAPI = WeiboShareSDK.createWeiboAPI(getContext(), mAppKey);
+        mWeiboShareAPI = WeiboShareSDK.createWeiboAPI(getContext().getApplicationContext(), mAppKey);
         mWeiboShareAPI.registerApp();
     }
 
