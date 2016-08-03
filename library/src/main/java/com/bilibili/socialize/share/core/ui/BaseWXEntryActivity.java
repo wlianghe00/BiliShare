@@ -67,7 +67,7 @@ public abstract class BaseWXEntryActivity extends Activity implements IWXAPIEven
     }
 
     private void initWXApi() {
-        mIWXAPI = WXAPIFactory.createWXAPI(getApplicationContext(), getAppId(), true);
+        mIWXAPI = WXAPIFactory.createWXAPI(this, getAppId(), true);
         if (mIWXAPI.isWXAppInstalled()) {
             mIWXAPI.registerApp(getAppId());
         }
