@@ -23,7 +23,6 @@ import android.text.TextUtils;
 import android.widget.Toast;
 
 import com.bilibili.socialize.share.R;
-import com.bilibili.socialize.share.download.IImageDownloader;
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
@@ -33,6 +32,7 @@ import com.bilibili.socialize.share.core.shareparam.ShareParamImage;
 import com.bilibili.socialize.share.core.shareparam.ShareParamText;
 import com.bilibili.socialize.share.core.shareparam.ShareParamVideo;
 import com.bilibili.socialize.share.core.shareparam.ShareParamWebPage;
+import com.bilibili.socialize.share.download.IImageDownloader;
 import com.bilibili.socialize.share.util.BitmapUtil;
 import com.bilibili.socialize.share.util.FileUtil;
 

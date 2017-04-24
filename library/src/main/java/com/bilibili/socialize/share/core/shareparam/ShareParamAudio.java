@@ -65,7 +65,7 @@ public class ShareParamAudio extends BaseShareParam implements Parcelable {
         mAudio = in.readParcelable(ShareAudio.class.getClassLoader());
     }
 
-    public static final Parcelable.Creator<ShareParamAudio> CREATOR = new Parcelable.Creator<ShareParamAudio>() {
+    public static final Creator<ShareParamAudio> CREATOR = new Creator<ShareParamAudio>() {
         public ShareParamAudio createFromParcel(Parcel source) {
             return new ShareParamAudio(source);
         }

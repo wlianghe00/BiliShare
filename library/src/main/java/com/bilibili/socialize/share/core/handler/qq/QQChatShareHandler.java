@@ -22,8 +22,8 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
-import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.SocializeListeners;
+import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.error.InvalidParamException;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;

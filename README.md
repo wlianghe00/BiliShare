@@ -3,7 +3,6 @@
 
 An android socializing SDK that supports to share text/image/web page/video/audio to qq/qzone/wechat/moment/sina platforms.
 
-开发交流群：397462257
 ## Quick Overview
  - Download [bilibili][1]
  - screenshot 
@@ -15,8 +14,8 @@ The library "biliShare" is indispensable. But "biliShare-util" is not indispensa
  - Add the dependency to your build.gradle.
 ```
 dependencies {
-    compile 'com.jungly.socialize:biliShare:0.1.05'
-    compile 'com.jungly.socialize:biliShare-util:0.1.05@aar'
+    compile 'com.jungly.socialize:biliShare:0.1.06'
+    compile 'com.jungly.socialize:biliShare-util:0.1.06@aar'
 }
 ```
 
@@ -25,13 +24,13 @@ dependencies {
 <dependency>
   <groupId>com.jungly.socialize</groupId>
   <artifactId>biliShare</artifactId>
-  <version>0.1.05</version>
+  <version>0.1.06</version>
   <type>pom</type>
 </dependency>
 <dependency>
   <groupId>com.jungly.socialize</groupId>
   <artifactId>biliShare-util</artifactId>
-  <version>0.1.05</version>
+  <version>0.1.06</version>
   <type>pom</type>
 </dependency>
 ```
@@ -73,7 +72,7 @@ public class WXEntryActivity extends BaseWXEntryActivity {
 License
 ---
 
-    Copyright 2015 Bilibili
+    Copyright 2015-2017 Bilibili
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

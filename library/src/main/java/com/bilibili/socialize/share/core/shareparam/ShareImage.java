@@ -159,7 +159,7 @@ public class ShareImage implements Parcelable {
         mResId = in.readInt();
     }
 
-    public static final Parcelable.Creator<ShareImage> CREATOR = new Parcelable.Creator<ShareImage>() {
+    public static final Creator<ShareImage> CREATOR = new Creator<ShareImage>() {
         public ShareImage createFromParcel(Parcel source) {
             return new ShareImage(source);
         }
