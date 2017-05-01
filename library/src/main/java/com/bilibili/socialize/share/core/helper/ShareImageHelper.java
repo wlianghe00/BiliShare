@@ -20,9 +20,11 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.bilibili.socialize.share.R;
+import com.bilibili.socialize.share.download.IImageDownloader;
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
@@ -32,7 +34,6 @@ import com.bilibili.socialize.share.core.shareparam.ShareParamImage;
 import com.bilibili.socialize.share.core.shareparam.ShareParamText;
 import com.bilibili.socialize.share.core.shareparam.ShareParamVideo;
 import com.bilibili.socialize.share.core.shareparam.ShareParamWebPage;
-import com.bilibili.socialize.share.download.IImageDownloader;
 import com.bilibili.socialize.share.util.BitmapUtil;
 import com.bilibili.socialize.share.util.FileUtil;
 
@@ -45,6 +46,7 @@ import java.io.IOException;
  * @since 2015/10/8
  */
 public class ShareImageHelper {
+    private static final String TAG = "BShare.image";
     private static final int THUMB_RESOLUTION_SIZE = 150;
     private static final int THUMB_MAX_SIZE = 30 * 1024;
     private static final int BITMAP_SAVE_THRESHOLD = 32 * 1024;
@@ -68,27 +70,42 @@ public class ShareImageHelper {
 
     public ShareImage saveBitmapToExternalIfNeed(ShareImage image) {
         if (image == null) {
+            Log.d(TAG, "save bitmap image: null image");
             return null;
         } else if (image.isBitmapImage()) {
             if (image.getBitmap().getByteCount() > BITMAP_SAVE_THRESHOLD) {
                 if (checkImageCachePath()) {
+                    Log.d(TAG, "save bitmap image: start");
                     File file = BitmapUtil.saveBitmapToExternal(image.getBitmap(), mShareConfiguration.getImageCachePath(mContext));
                     if (file != null && file.exists()) {
+                        Log.d(TAG, "save bitmap image: success");
                         image.setLocalFile(file);
+                    } else {
+                        Log.w(TAG, "save bitmap image: failed");
                     }
                 }
+            } else {
+                Log.d(TAG, "save bitmap image: image size is valid, skip");
             }
         } else if (image.isResImage()) {
             Bitmap bmp = BitmapFactory.decodeResource(mContext.getResources(), image.getResId());
             if (bmp.getByteCount() > BITMAP_SAVE_THRESHOLD) {
                 if (checkImageCachePath()) {
+                    Log.d(TAG, "save res image: start");
                     File file = BitmapUtil.saveBitmapToExternal(bmp, mShareConfiguration.getImageCachePath(mContext));
                     if (file != null && file.exists()) {
+                        Log.d(TAG, "save res image: success");
                         image.setLocalFile(file);
                         bmp.recycle();
+                    } else {
+                        Log.w(TAG, "save res image: failed");
                     }
                 }
+            } else {
+                Log.d(TAG, "save res image: image size is valid, skip");
             }
+        } else {
+            Log.d(TAG, "save image: file image, skip");
         }
         return image;
     }
@@ -99,11 +116,13 @@ public class ShareImageHelper {
 
     public void copyImageToCacheFileDirIfNeed(ShareImage shareImage) {
         if (shareImage == null) {
+            Log.d(TAG, "copy image file: null image");
             return;
         }
 
         File localFile = shareImage.getLocalFile();
         if (localFile == null || !localFile.exists()) {
+            Log.d(TAG, "copy image file: local file not exists");
             return;
         }
 
@@ -114,12 +133,17 @@ public class ShareImageHelper {
         String localFilePath = localFile.getAbsolutePath();
         if (!localFilePath.startsWith(mContext.getCacheDir().getParentFile().getAbsolutePath())
                 && localFilePath.startsWith(mShareConfiguration.getImageCachePath(mContext))) {
+            Log.d(TAG, "copy image file: has copied before");
             return;
         }
 
+        Log.d(TAG, "copy image file: start");
         File targetFile = copyFile(localFile, mShareConfiguration.getImageCachePath(mContext));
         if (targetFile != null && targetFile.exists()) {
+            Log.d(TAG, "copy image file: success");
             shareImage.setLocalFile(targetFile);
+        } else {
+            Log.w(TAG, "copy image file: failed");
         }
     }
 
@@ -157,6 +181,7 @@ public class ShareImageHelper {
 
     public byte[] buildThumbData(final ShareImage image, int maxSize, int widthMax, int heightMax, boolean isFixSize) {
         if (image == null) {
+            Log.d(TAG, "build thumb: null image");
             return new byte[0];
         }
 
@@ -164,15 +189,19 @@ public class ShareImageHelper {
         Bitmap bmp = null;
 
         if (image.isNetImage()) {
+            Log.d(TAG, "build thumb: from net: start");
             if (mCallback != null) {
                 mCallback.onProgress(R.string.bili_share_sdk_progress_compress_image);
             }
             bmp = BitmapUtil.decodeUrl(image.getNetImageUrl());
         } else if (image.isLocalImage()) {
+            Log.d(TAG, "build thumb: from local: start");
             bmp = BitmapUtil.decodeFile(image.getLocalPath(), THUMB_RESOLUTION_SIZE, THUMB_RESOLUTION_SIZE);
         } else if (image.isResImage()) {
+            Log.d(TAG, "build thumb: from res: start");
             bmp = BitmapFactory.decodeResource(mContext.getResources(), image.getResId());
         } else if (image.isBitmapImage()) {
+            Log.d(TAG, "build thumb: from bitmap: start");
             if (mCallback != null) {
                 mCallback.onProgress(R.string.bili_share_sdk_progress_compress_image);
             }
@@ -181,6 +210,7 @@ public class ShareImageHelper {
         }
 
         if (bmp != null && !bmp.isRecycled()) {
+            Log.d(TAG, "build thumb: success");
             if (!isFixSize) {
                 int bmpWidth = bmp.getWidth();
                 int bmpHeight = bmp.getHeight();
@@ -195,6 +225,8 @@ public class ShareImageHelper {
             }
             byte[] tempArr = BitmapUtil.bmpToByteArray(thumbBmp, maxSize, true);
             return tempArr == null ? new byte[0] : tempArr;
+        } else {
+            Log.w(TAG, "build thumb: failed");
         }
 
         return new byte[0];
@@ -211,6 +243,7 @@ public class ShareImageHelper {
      */
     public void downloadImageIfNeed(final ShareImage image, final Runnable task) throws ShareException {
         if (image == null || !image.isNetImage()) {
+            Log.d(TAG, "download image: skip, no need");
             task.run();
         } else {
             if (!checkImageCachePath()) {
@@ -224,6 +257,7 @@ public class ShareImageHelper {
                     new IImageDownloader.OnImageDownloadListener() {
                         @Override
                         public void onStart() {
+                            Log.d(TAG, "download image: start");
                             if (mCallback != null) {
                                 mCallback.onProgress(R.string.bili_share_sdk_progress_compress_image);
                             }
@@ -231,6 +265,7 @@ public class ShareImageHelper {
 
                         @Override
                         public void onSuccess(String filePath) {
+                            Log.d(TAG, String.format("download image: success: (%s)", filePath));
                             image.setLocalFile(new File(filePath));
                             copyImageToCacheFileDirIfNeed(image);
                             task.run();
@@ -238,6 +273,7 @@ public class ShareImageHelper {
 
                         @Override
                         public void onFailed(String url) {
+                            Log.d(TAG, String.format("download image: failed: (%s)", url));
                             if (mCallback != null) {
                                 mCallback.onProgress(R.string.bili_share_sdk_compress_image_failed);
                                 mCallback.onImageDownloadFailed();
@@ -249,6 +285,7 @@ public class ShareImageHelper {
 
     private boolean checkImageCachePath() {
         if (TextUtils.isEmpty(mShareConfiguration.getImageCachePath(mContext))) {
+            Log.w(TAG, "存储设备不可用");
             Toast.makeText(mContext.getApplicationContext(), "存储设备不可用", Toast.LENGTH_LONG).show();
             return false;
         }

@@ -17,14 +17,10 @@
 package com.bilibili.socialize.share.core.handler.sina;
 
 import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
-import com.bilibili.socialize.share.core.SocializeListeners;
 import com.bilibili.socialize.share.core.SocializeMedia;
-import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
-import com.bilibili.socialize.share.core.handler.AbsShareHandler;
+import com.bilibili.socialize.share.core.handler.AbsShareTransitHandler;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
 import com.bilibili.socialize.share.core.ui.SinaAssistActivity;
 
@@ -33,57 +29,28 @@ import com.bilibili.socialize.share.core.ui.SinaAssistActivity;
  * @email jungly.ik@gmail.com
  * @since 2015/10/9
  */
-public class SinaShareTransitHandler extends AbsShareHandler {
+public class SinaShareTransitHandler extends AbsShareTransitHandler {
+    private static final String TAG = "BShare.sina.transit";
+    private String mClientName;
 
-    public static final int REQ_CODE = 10233;
-
-    public SinaShareTransitHandler(Activity context, BiliShareConfiguration configuration) {
+    public SinaShareTransitHandler(Activity context, BiliShareConfiguration configuration, String clientName) {
         super(context, configuration);
+        mClientName = clientName;
     }
 
     @Override
-    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data, SocializeListeners.ShareListener listener) {
-        super.onActivityResult(activity, requestCode, resultCode, data, listener);
-        if (data == null || getShareListener() == null) {
-            return;
-        }
-
-        int statusCode = data.getIntExtra(SinaAssistActivity.KEY_CODE, -1);
-        if (statusCode == BiliShareStatusCode.ST_CODE_SUCCESSED) {
-            getShareListener().onSuccess(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SUCCESSED);
-        } else if (statusCode == BiliShareStatusCode.ST_CODE_ERROR) {
-            getShareListener().onError(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED, new Exception());
-        } else if (statusCode == BiliShareStatusCode.ST_CODE_ERROR_CANCEL) {
-            getShareListener().onCancel(SocializeMedia.SINA);
-        }
-
+    protected void onJumpToAssist(Activity context, BaseShareParam params) {
+        SinaAssistActivity.start(context, params, mShareConfiguration, mClientName);
     }
 
     @Override
-    public void share(final BaseShareParam params, final SocializeListeners.ShareListener listener) throws Exception {
-        super.share(params, listener);
-        final Context context = getContext();
-        mImageHelper.saveBitmapToExternalIfNeed(params);
-        mImageHelper.copyImageToCacheFileDirIfNeed(params);
-        mImageHelper.downloadImageIfNeed(params, new Runnable() {
-            @Override
-            public void run() {
-                Intent intent = new Intent(context, SinaAssistActivity.class);
-                intent.putExtra(SinaAssistActivity.KEY_PARAM, params);
-                intent.putExtra(SinaAssistActivity.KEY_CONFIG, mShareConfiguration);
-                ((Activity) context).startActivityForResult(intent, REQ_CODE);
-            }
-        });
+    protected String tag() {
+        return TAG;
     }
 
     @Override
     public SocializeMedia getShareMedia() {
         return SocializeMedia.SINA;
-    }
-
-    @Override
-    protected boolean isNeedActivityContext() {
-        return true;
     }
 
 }

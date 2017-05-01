@@ -195,7 +195,7 @@ public class BiliShareConfiguration implements Parcelable {
         this.mTaskExecutor = Executors.newCachedThreadPool();
     }
 
-    public static final Creator<BiliShareConfiguration> CREATOR = new Creator<BiliShareConfiguration>() {
+    public static final Parcelable.Creator<BiliShareConfiguration> CREATOR = new Parcelable.Creator<BiliShareConfiguration>() {
         public BiliShareConfiguration createFromParcel(Parcel source) {
             return new BiliShareConfiguration(source);
         }

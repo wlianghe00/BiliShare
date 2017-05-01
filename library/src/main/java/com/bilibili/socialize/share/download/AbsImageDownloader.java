@@ -18,6 +18,7 @@ package com.bilibili.socialize.share.download;
 
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.bilibili.socialize.share.core.error.ShareException;
 
@@ -29,16 +30,19 @@ import java.io.File;
  * @since 2016/2/7
  */
 public abstract class AbsImageDownloader implements IImageDownloader {
+    private static final String TAG = "BShare.image.dl";
 
     @Override
     public final void download(Context context, String imageUrl, String targetFileDirPath, OnImageDownloadListener listener) throws ShareException {
         if (TextUtils.isEmpty(imageUrl)) {
+            Log.d(TAG, "null image url");
             if (listener != null) {
                 listener.onFailed(imageUrl);
             }
         } else {
             String filePath = createFileIfNeed(context, imageUrl, targetFileDirPath);
             if (TextUtils.isEmpty(filePath)) {
+                Log.e(TAG, "create image file failed");
                 if (listener != null) {
                     listener.onFailed(imageUrl);
                 }
@@ -47,6 +51,7 @@ public abstract class AbsImageDownloader implements IImageDownloader {
 
             File targetFile = new File(filePath);
             if (targetFile.exists()) {
+                Log.d(TAG, "image already downloaded");
                 if (listener != null) {
                     listener.onSuccess(targetFile.getAbsolutePath());
                 }

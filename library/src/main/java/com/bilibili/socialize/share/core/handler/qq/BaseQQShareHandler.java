@@ -22,6 +22,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.bilibili.socialize.share.R;
@@ -44,6 +45,7 @@ import java.util.Map;
  * @since 2015/10/8
  */
 public abstract class BaseQQShareHandler extends BaseShareHandler {
+    private static final String TAG = "BShare.qq.base_handler";
 
     private String mAppId;
     protected Tencent mTencent;
@@ -58,7 +60,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
     }
 
     @Override
-    protected void checkConfig() throws Exception {
+    public void checkConfig() throws Exception {
         if (!TextUtils.isEmpty(mAppId)) {
             return;
         }
@@ -70,7 +72,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
     }
 
     @Override
-    protected void init() throws Exception {
+    public void init() throws Exception {
         if (mTencent == null) {
             mTencent = Tencent.createInstance(mAppId, getContext().getApplicationContext());
         }
@@ -86,9 +88,11 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
         doOnMainThread(new Runnable() {
             @Override
             public void run() {
+                Log.d(TAG, "real start share");
                 postProgressStart();
                 onShare(activity, mTencent, params, mUiListener);
                 if (activity != null && !isMobileQQSupportShare(activity.getApplicationContext())) {
+                    Log.d(TAG, "qq has not install");
                     String msg = activity.getString(R.string.bili_share_sdk_not_install_qq);
                     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show();
                     if (getShareListener() != null) {
@@ -109,6 +113,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
     protected final IUiListener mUiListener = new IUiListener() {
         @Override
         public void onCancel() {
+            Log.d(TAG, "share cancel");
             if (getShareListener() != null) {
                 getShareListener().onCancel(getShareMedia());
             }
@@ -116,6 +121,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
 
         @Override
         public void onComplete(Object response) {
+            Log.d(TAG, "share succss");
             if (getShareListener() != null) {
                 getShareListener().onSuccess(getShareMedia(), BiliShareStatusCode.ST_CODE_SUCCESSED);
             }
@@ -123,6 +129,7 @@ public abstract class BaseQQShareHandler extends BaseShareHandler {
 
         @Override
         public void onError(UiError e) {
+            Log.d(TAG, "share failed");
             if (getShareListener() != null) {
                 getShareListener().onError(getShareMedia(), BiliShareStatusCode.ST_CODE_SHARE_ERROR_EXCEPTION, new ShareException(e.errorMessage));
             }

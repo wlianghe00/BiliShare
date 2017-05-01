@@ -15,6 +15,7 @@ buildscript {
 allprojects {
     repositories {
         jcenter()
+        maven { url "https://dl.bintray.com/thelasterstar/maven/" }
     }
 }
 
@@ -23,6 +24,8 @@ ext {
     targetSdkVersion = 23
     minSdkVersion = 14
     compileSdkVersion = targetSdkVersion
+    versionCode = 7
+    versionName = '0.1.07'
 }
 
 task clean(type: Delete) {

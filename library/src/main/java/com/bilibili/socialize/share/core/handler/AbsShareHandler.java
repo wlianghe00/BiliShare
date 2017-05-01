@@ -36,6 +36,7 @@ import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
  * @since 2015/10/8
  */
 public abstract class AbsShareHandler implements IShareHandler {
+    private static final String TAG = "BShare.handler.abs";
 
     protected Context mContext;
 

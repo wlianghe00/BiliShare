@@ -19,16 +19,13 @@ package com.bilibili.socialize.share.core.ui;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
-import com.bilibili.socialize.share.core.SocializeListeners;
 import com.bilibili.socialize.share.core.SocializeMedia;
-import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
-import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.handler.sina.SinaShareHandler;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
-import com.sina.weibo.sdk.api.share.BaseResponse;
-import com.sina.weibo.sdk.api.share.IWeiboHandler;
 
 /**
  * 处理微博分享，相当于QQ的{@link com.tencent.connect.common.AssistActivity}
@@ -37,80 +34,88 @@ import com.sina.weibo.sdk.api.share.IWeiboHandler;
  * @email jungly.ik@gmail.com
  * @since 2015/10/15 14:00
  */
-public class SinaAssistActivity extends Activity implements IWeiboHandler.Response {
-    private static final String TAG = "SinaAssist";
-
-    public static final String KEY_CONFIG = "sina_share_config";
-    public static final String KEY_CODE = "sina_share_result_code";
-    public static final String KEY_PARAM = "sina_share_param";
-
-    private SinaShareHandler mShareHandler;
+public class SinaAssistActivity extends BaseAssistActivity<SinaShareHandler> {
+    private static final String TAG = "BShare.sina.assist";
 
     private boolean mIsActivityResultCanceled;
     private boolean mHasOnNewIntentCalled;
-    private boolean mHasResponseCalled;
+    private Handler mHandler = new Handler();
+
+    private boolean mIsFirstIntent;
+
+    public static void start(Activity act, BaseShareParam params, BiliShareConfiguration configuration, String clientName) {
+        Intent intent = new Intent(act, SinaAssistActivity.class);
+        intent.putExtra(KEY_PARAM, params);
+        intent.putExtra(KEY_CONFIG, configuration);
+        intent.putExtra(KEY_CLIENT_NAME, clientName);
+        intent.putExtra(KEY_TYPE, SocializeMedia.SINA.name());
+        act.startActivity(intent);
+        act.overridePendingTransition(0, 0);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        BiliShareConfiguration shareConfig = getIntent().getParcelableExtra(KEY_CONFIG);
-        if (shareConfig == null) {
-            finishWithFailResult();
-            return;
+        if (savedInstanceState == null) {
+            mIsFirstIntent = true;
         }
+    }
 
-        mShareHandler = new SinaShareHandler(this, shareConfig);
-        try {
-            mShareHandler.checkConfig();
-            mShareHandler.init();
-        } catch (Exception e) {
-            e.printStackTrace();
-            finishWithFailResult();
-            return;
+    @Override
+    protected SinaShareHandler resolveHandler(SocializeMedia media, BiliShareConfiguration shareConfig) {
+        if (media == SocializeMedia.SINA) {
+            return new SinaShareHandler(this, shareConfig);
         }
-
-        mShareHandler.onActivityCreated(this, savedInstanceState, mInnerListener);
-        try {
-            if (savedInstanceState == null) {
-                BaseShareParam param = getShareParam();
-                if (param == null) {
-                    mInnerListener.onError(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SHARE_ERROR_EXCEPTION,
-                            new ShareException("sina share param error"));
-                    finishWithCancelResult();
-                } else {
-                    mShareHandler.share(getShareParam(), mInnerListener);
-                }
-            }
-        } catch (Exception e) {
-            mInnerListener.onError(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SHARE_ERROR_EXCEPTION, e);
-            e.printStackTrace();
-        }
+        return null;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (mHasOnNewIntentCalled || mHasResponseCalled) {
+        Log.d(TAG, String.format("activity onResume: OnNewIntentCalled(%s), OnActivityResult(%s), isFinishing(%s)",
+                mHasOnNewIntentCalled, mIsActivityResultCanceled, isFinishing()));
+        if (mHasOnNewIntentCalled || mHasGetResult || isFinishing()) {
             return;
         }
 
-        if (mShareHandler.mWeiboShareAPI != null
-                && mShareHandler.mWeiboShareAPI.isWeiboAppInstalled()
-                && mIsActivityResultCanceled
-                && !isFinishing()) {
+        boolean isAppInstall = mShareHandler.mShareHandler != null && mShareHandler.isSinaClientInstalled();
+        if (isAppInstall && mIsActivityResultCanceled) {
+            Log.e(TAG, "gonna finish share with incorrect callback (cancel)");
             finishWithCancelResult();
+            return;
         }
+
+        //卸载微博，首次分享可能会失败，并且没有回调。
+        if (mIsFirstIntent) {
+            mIsFirstIntent = false;
+            Log.d(TAG, "post pending finish task delay 1500");
+            mHandler.postDelayed(mPendingTask, 1500);
+            return;
+        }
+
+        Log.d(TAG, "post pending finish task delay 5000");
+        mHandler.postDelayed(mPendingTask, 5000);
     }
 
-    private BaseShareParam getShareParam() {
-        return getIntent().getParcelableExtra(KEY_PARAM);
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mHandler.removeCallbacks(mPendingTask);
     }
+
+    private Runnable mPendingTask = new Runnable() {
+        @Override
+        public void run() {
+            Log.e(TAG, "finish share with pending task (cancel)");
+            finishWithCancelResult();
+        }
+    };
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         mHasOnNewIntentCalled = true;
+        Log.d(TAG, "activity onNewIntent");
         mShareHandler.onActivityNewIntent(this, intent);
     }
 
@@ -118,48 +123,37 @@ public class SinaAssistActivity extends Activity implements IWeiboHandler.Respon
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         mIsActivityResultCanceled = resultCode == Activity.RESULT_CANCELED;
-        mShareHandler.onActivityResult(this, requestCode, resultCode, data, mInnerListener);
+        Log.d(TAG, String.format("activity onResult: resultCode(%d), canceled(%s)", resultCode, mIsActivityResultCanceled));
+        mShareHandler.onActivityResult(this, requestCode, resultCode, data, this);
     }
 
     @Override
-    public void onResponse(BaseResponse baseResponse) {
-        mHasResponseCalled = true;
-        if (mShareHandler != null) {
-            mShareHandler.onResponse(baseResponse);
-        }
+    protected void onDestroy() {
+        super.onDestroy();
+        mHandler.removeCallbacks(null);
     }
 
-    private void finishWithCancelResult() {
-        finishWithResult(BiliShareStatusCode.ST_CODE_ERROR_CANCEL);
+    @Override
+    public void onSuccess(SocializeMedia type, int code) {
+        super.onSuccess(type, code);
+        release();
     }
 
-    private void finishWithFailResult() {
-        finishWithResult(BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED);
+    @Override
+    public void onError(SocializeMedia type, int code, Throwable error) {
+        super.onError(type, code, error);
+        release();
     }
 
-    protected SocializeListeners.ShareListenerAdapter mInnerListener = new SocializeListeners.ShareListenerAdapter() {
-
-        @Override
-        public void onStart(SocializeMedia type) {
-            super.onStart(type);
-        }
-
-        @Override
-        public void onComplete(SocializeMedia type, int code, Throwable error) {
-            finishWithResult(code);
-        }
-
-    };
-
-    private void finishWithResult(int code) {
-
-        if (mShareHandler != null) {
-            mShareHandler.onActivityDestroy();
-        }
-
-        Intent intent = new Intent();
-        intent.putExtra(KEY_CODE, code);
-        setResult(Activity.RESULT_OK, intent);
-        finish();
+    @Override
+    public void onCancel(SocializeMedia type) {
+        super.onCancel(type);
+        release();
     }
+
+    @Override
+    protected String tag() {
+        return TAG;
+    }
+
 }

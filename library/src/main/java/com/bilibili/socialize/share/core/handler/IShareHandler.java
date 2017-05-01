@@ -18,9 +18,9 @@ package com.bilibili.socialize.share.core.handler;
 
 import android.content.Context;
 
-import com.bilibili.socialize.share.core.IActivityLifecycleMirror;
-import com.bilibili.socialize.share.core.SocializeListeners;
 import com.bilibili.socialize.share.core.SocializeMedia;
+import com.bilibili.socialize.share.core.SocializeListeners;
+import com.bilibili.socialize.share.core.IActivityLifecycleMirror;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
 
 /**

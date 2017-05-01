@@ -4,7 +4,6 @@
 
 package com.bilibili.socialize.sample;
 
-import android.content.Intent;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -39,12 +38,6 @@ public abstract class BaseShareableActivity extends AppCompatActivity implements
             else
                 mShare.showShareWarpWindow(anchor);
         }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        ShareHelper.shareClient().onActivityResult(this, requestCode, resultCode, data);
     }
 
     @Override

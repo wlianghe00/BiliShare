@@ -107,7 +107,7 @@ public class SharePlatformConfig implements Parcelable {
         } while (index < size);
     }
 
-    public static final Creator<SharePlatformConfig> CREATOR = new Creator<SharePlatformConfig>() {
+    public static final Parcelable.Creator<SharePlatformConfig> CREATOR = new Parcelable.Creator<SharePlatformConfig>() {
         @Override
         public SharePlatformConfig createFromParcel(Parcel source) {
             return new SharePlatformConfig(source);

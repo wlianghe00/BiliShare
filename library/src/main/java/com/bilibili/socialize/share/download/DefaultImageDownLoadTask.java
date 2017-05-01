@@ -19,6 +19,7 @@ package com.bilibili.socialize.share.download;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.bilibili.socialize.share.util.FileUtil;
 import com.bilibili.socialize.share.util.IOUtil;
@@ -38,6 +39,7 @@ import java.net.URL;
  * @since 2015/10/26 11:04
  */
 public class DefaultImageDownLoadTask extends Thread {
+    private static final String TAG = "BShare.image.dl_task";
     private static final String TEMP_EXTENSION = ".temp";
 
     private Handler mHandler = new Handler(Looper.getMainLooper());
@@ -60,6 +62,7 @@ public class DefaultImageDownLoadTask extends Thread {
         File tmpFile = new File(mFilePath + TEMP_EXTENSION);
         File parentFile = tmpFile.getParentFile();
         if (!parentFile.isDirectory() || (!parentFile.exists() && !parentFile.mkdirs())) {
+            Log.e(TAG, "image download: environment init failed");
             onPostExecute(null);
             return;
         }
@@ -68,6 +71,7 @@ public class DefaultImageDownLoadTask extends Thread {
             URL url = new URL(mDownloadUrl);
             conn = (HttpURLConnection) url.openConnection();
         } catch (Exception e) {
+            Log.w(TAG, "image download: http connect failed");
             onPostExecute(null);
             return;
         }
@@ -88,9 +92,12 @@ public class DefaultImageDownLoadTask extends Thread {
                     out = new BufferedOutputStream(new FileOutputStream(tmpFile));
                     in = conn.getInputStream();
                     IOUtil.copyLarge(in, out);
-                } else
+                } else {
+                    Log.w(TAG, String.format("image download failed: http code (%d)", code));
                     mFilePath = null;
+                }
             } catch (IOException e) {
+                Log.w(TAG, "image download failed", e);
                 mFilePath = null;
             } finally {
                 IOUtil.closeQuietly(out);
@@ -105,6 +112,7 @@ public class DefaultImageDownLoadTask extends Thread {
             }
         } catch (IOException e) {
             e.printStackTrace();
+            Log.w(TAG, "image download failed", e);
             mFilePath = null;
         } finally {
             conn.disconnect();
@@ -118,6 +126,7 @@ public class DefaultImageDownLoadTask extends Thread {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
+                    Log.d(TAG, "image download start");
                     mDownLoadListener.onStart();
                 }
             });
@@ -138,12 +147,14 @@ public class DefaultImageDownLoadTask extends Thread {
     }
 
     private void onDownloadFailed() {
+        Log.d(TAG, "image download failed");
         if (mDownLoadListener != null) {
             mDownLoadListener.onFailed(mDownloadUrl);
         }
     }
 
     private void onDownloadSuccess() {
+        Log.d(TAG, "image download success");
         if (mDownLoadListener != null) {
             mDownLoadListener.onSuccess(mFilePath);
         }

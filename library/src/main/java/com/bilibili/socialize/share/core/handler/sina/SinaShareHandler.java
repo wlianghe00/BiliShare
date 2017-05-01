@@ -18,8 +18,8 @@ package com.bilibili.socialize.share.core.handler.sina;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
 import com.bilibili.socialize.share.core.SharePlatformConfig;
@@ -33,32 +33,25 @@ import com.bilibili.socialize.share.core.error.UnSupportedException;
 import com.bilibili.socialize.share.core.handler.BaseShareHandler;
 import com.bilibili.socialize.share.core.helper.AccessTokenKeeper;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
-import com.bilibili.socialize.share.core.shareparam.ShareAudio;
 import com.bilibili.socialize.share.core.shareparam.ShareImage;
 import com.bilibili.socialize.share.core.shareparam.ShareParamAudio;
 import com.bilibili.socialize.share.core.shareparam.ShareParamImage;
 import com.bilibili.socialize.share.core.shareparam.ShareParamText;
 import com.bilibili.socialize.share.core.shareparam.ShareParamVideo;
 import com.bilibili.socialize.share.core.shareparam.ShareParamWebPage;
-import com.bilibili.socialize.share.core.shareparam.ShareVideo;
+import com.sina.weibo.sdk.WbSdk;
+import com.sina.weibo.sdk.WeiboAppManager;
 import com.sina.weibo.sdk.api.ImageObject;
-import com.sina.weibo.sdk.api.MusicObject;
 import com.sina.weibo.sdk.api.TextObject;
-import com.sina.weibo.sdk.api.VideoObject;
-import com.sina.weibo.sdk.api.WebpageObject;
 import com.sina.weibo.sdk.api.WeiboMultiMessage;
-import com.sina.weibo.sdk.api.share.BaseResponse;
-import com.sina.weibo.sdk.api.share.IWeiboHandler;
-import com.sina.weibo.sdk.api.share.IWeiboShareAPI;
-import com.sina.weibo.sdk.api.share.SendMultiMessageToWeiboRequest;
-import com.sina.weibo.sdk.api.share.WeiboShareSDK;
 import com.sina.weibo.sdk.auth.AuthInfo;
 import com.sina.weibo.sdk.auth.Oauth2AccessToken;
-import com.sina.weibo.sdk.auth.WeiboAuthListener;
+import com.sina.weibo.sdk.auth.WbAppInfo;
+import com.sina.weibo.sdk.auth.WbAuthListener;
+import com.sina.weibo.sdk.auth.WbConnectErrorMessage;
 import com.sina.weibo.sdk.auth.sso.SsoHandler;
-import com.sina.weibo.sdk.constant.WBConstants;
-import com.sina.weibo.sdk.exception.WeiboException;
-import com.sina.weibo.sdk.utils.Utility;
+import com.sina.weibo.sdk.share.WbShareCallback;
+import com.sina.weibo.sdk.share.WbShareHandler;
 
 import java.io.File;
 import java.util.Map;
@@ -70,14 +63,14 @@ import java.util.Map;
  * @email jungly.ik@gmail.com
  * @since 2015/10/9
  */
-public class SinaShareHandler extends BaseShareHandler {
-
+public class SinaShareHandler extends BaseShareHandler implements WbShareCallback {
+    private static final String TAG = "BShare.sina.handler";
     public static final String DEFAULT_REDIRECT_URL = "https://api.weibo.com/oauth2/default.html";
     public static final String DEFAULT_SCOPE = "email,direct_messages_read,direct_messages_write,"
             + "friendships_groups_read,friendships_groups_write,statuses_to_me_read,"
             + "follow_app_official_microblog," + "invitation_write";
 
-    public IWeiboShareAPI mWeiboShareAPI = null;
+    public WbShareHandler mShareHandler = null;
     private static SsoHandler mSsoHandler;
     private WeiboMultiMessage mWeiboMessage;
     private String mAppKey;
@@ -100,42 +93,23 @@ public class SinaShareHandler extends BaseShareHandler {
 
     @Override
     public void init() throws Exception {
-        if (mWeiboShareAPI == null) {
-            mWeiboShareAPI = WeiboShareSDK.createWeiboAPI(getContext(), mAppKey);
-            mWeiboShareAPI.registerApp();
+        if (mShareHandler == null) {
+            Map<String, String> appConfig = mShareConfiguration.getPlatformConfig().getPlatformDevInfo(SocializeMedia.SINA);
+            final AuthInfo mAuthInfo = new AuthInfo(getContext(), mAppKey,
+                    appConfig.get(SharePlatformConfig.REDIRECT_URL), appConfig.get(SharePlatformConfig.SCOPE));
+            WbSdk.install(getContext().getApplicationContext(), mAuthInfo);
+            mShareHandler = new WbShareHandler((Activity) getContext());
+            mShareHandler.registerApp();
         }
     }
 
-    /**
-     * 当 Activity 被重新初始化时（该 Activity 处于后台时，可能会由于内存不足被杀掉了），
-     * 需要调用 {@link IWeiboShareAPI#handleWeiboResponse} 来接收微博客户端返回的数据。
-     * 执行成功，返回 true，并调用 {@link IWeiboHandler.Response#onResponse}；
-     * 失败返回 false，不调用上述回调
-     *
-     * @param activity
-     * @param savedInstanceState
-     */
-    @Override
-    public void onActivityCreated(Activity activity, Bundle savedInstanceState, SocializeListeners.ShareListener listener) {
-        super.onActivityCreated(activity, savedInstanceState, listener);
-        if (savedInstanceState != null && mWeiboShareAPI != null) {
-            mWeiboShareAPI.handleWeiboResponse(activity.getIntent(), (IWeiboHandler.Response) activity);
-        }
-    }
-
-    /**
-     * 从当前应用唤起微博并进行分享后，返回到当前应用时，需要在此处调用该函数
-     * 来接收微博客户端返回的数据；执行成功，返回 true，并调用
-     * {@link IWeiboHandler.Response#onResponse}；失败返回 false，不调用上述回调
-     *
-     * @param intent
-     */
     @Override
     public void onActivityNewIntent(Activity activity, Intent intent) {
         super.onActivityNewIntent(activity, intent);
-        if (mWeiboShareAPI != null)
+        if (mShareHandler != null)
             try {
-                mWeiboShareAPI.handleWeiboResponse(intent, (IWeiboHandler.Response) activity);
+                Log.d(TAG, "doResultIntent when activity new intent");
+                mShareHandler.doResultIntent(intent, this);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -146,6 +120,7 @@ public class SinaShareHandler extends BaseShareHandler {
             data, SocializeListeners.ShareListener listener) {
         super.onActivityResult(activity, requestCode, resultCode, data, listener);
         if (mSsoHandler != null && TextUtils.isEmpty(getToken())) {
+            Log.d(TAG, "authorizeCallBack when activity result");
             mSsoHandler.authorizeCallBack(requestCode, resultCode, data);
         }
 
@@ -208,10 +183,7 @@ public class SinaShareHandler extends BaseShareHandler {
             @Override
             public void run() {
                 final WeiboMultiMessage weiboMessage = new WeiboMultiMessage();
-
-                if (!isSinaClientInstalled()) {
-                    weiboMessage.textObject = getTextObj(params);
-                }
+                weiboMessage.textObject = getTextObj(params);
 
                 try {
                     checkImage(params.getThumb());
@@ -219,8 +191,6 @@ public class SinaShareHandler extends BaseShareHandler {
                 } catch (Exception e) {
                     weiboMessage.textObject = getTextObj(params);
                 }
-
-                weiboMessage.mediaObject = getWebPageObj(params);
 
                 allInOneShare(weiboMessage);
             }
@@ -241,10 +211,7 @@ public class SinaShareHandler extends BaseShareHandler {
             @Override
             public void run() {
                 final WeiboMultiMessage weiboMessage = new WeiboMultiMessage();
-
-                if (!isSinaClientInstalled()) {
-                    weiboMessage.textObject = getTextObj(params);
-                }
+                weiboMessage.textObject = getTextObj(params);
 
                 try {
                     checkImage(params.getThumb());
@@ -252,8 +219,6 @@ public class SinaShareHandler extends BaseShareHandler {
                 } catch (Exception e) {
                     weiboMessage.textObject = getTextObj(params);
                 }
-
-                weiboMessage.mediaObject = getAudioObj(params);
 
                 allInOneShare(weiboMessage);
             }
@@ -274,10 +239,7 @@ public class SinaShareHandler extends BaseShareHandler {
             @Override
             public void run() {
                 final WeiboMultiMessage weiboMessage = new WeiboMultiMessage();
-
-                if (!isSinaClientInstalled()) {
-                    weiboMessage.textObject = getTextObj(params);
-                }
+                weiboMessage.textObject = getTextObj(params);
 
                 try {
                     checkImage(params.getThumb());
@@ -285,8 +247,6 @@ public class SinaShareHandler extends BaseShareHandler {
                 } catch (Exception e) {
                     weiboMessage.textObject = getTextObj(params);
                 }
-
-                weiboMessage.mediaObject = getVideoObj(params);
 
                 allInOneShare(weiboMessage);
             }
@@ -331,7 +291,12 @@ public class SinaShareHandler extends BaseShareHandler {
         TextObject textObject = new TextObject();
 
         if (params != null) {
+            textObject.title = params.getTitle();
             textObject.text = params.getContent();
+            textObject.actionUrl = params.getTargetUrl();
+            if (!TextUtils.isEmpty(textObject.actionUrl)) {
+                textObject.text = String.format("%s %s", textObject.text, textObject.actionUrl);
+            }
         }
 
         return textObject;
@@ -357,102 +322,12 @@ public class SinaShareHandler extends BaseShareHandler {
         return imageObject;
     }
 
-    /**
-     * 创建多媒体（网页）消息对象。
-     *
-     * @return 多媒体（网页）消息对象。
-     */
-    private WebpageObject getWebPageObj(ShareParamWebPage params) {
-        WebpageObject mediaObject = new WebpageObject();
-        mediaObject.identify = Utility.generateGUID();
-        mediaObject.title = params.getContent();
-        mediaObject.description = params.getTitle();
-
-        byte[] thumbData = mImageHelper.buildThumbData(params.getThumb());
-        if (thumbData == null || thumbData.length == 0) {
-            mediaObject.thumbData = mImageHelper.buildThumbData(new ShareImage(mShareConfiguration.getDefaultShareImage()));
-        } else
-            mediaObject.thumbData = thumbData;
-
-        mediaObject.actionUrl = params.getTargetUrl();
-        mediaObject.defaultText = " 哔哩哔哩  ( ゜- ゜)つロ 乾杯~";
-        return mediaObject;
-    }
-
-    /**
-     * 创建多媒体（音乐）消息对象。
-     *
-     * @return 多媒体（音乐）消息对象。
-     */
-    private MusicObject getAudioObj(ShareParamAudio params) {
-        MusicObject musicObject = new MusicObject();
-        musicObject.identify = Utility.generateGUID();
-        musicObject.title = params.getContent();
-        musicObject.description = params.getTitle();
-
-        byte[] thumbData = mImageHelper.buildThumbData(params.getThumb());
-        if (thumbData == null || thumbData.length == 0) {
-            musicObject.thumbData = mImageHelper.buildThumbData(new ShareImage(mShareConfiguration.getDefaultShareImage()));
-        } else {
-            musicObject.thumbData = thumbData;
-        }
-
-        musicObject.actionUrl = params.getTargetUrl();
-
-        ShareAudio audio = params.getAudio();
-        if (audio != null) {
-            musicObject.dataUrl = audio.getAudioSrcUrl();
-            musicObject.dataHdUrl = audio.getAudioSrcUrl();
-            musicObject.h5Url = audio.getAudioH5Url();
-            musicObject.duration = 10;
-            musicObject.defaultText = audio.getDescription();
-        }
-        return musicObject;
-    }
-
-    /**
-     * 创建多媒体（视频）消息对象。
-     *
-     * @return 多媒体（视频）消息对象。
-     */
-    private VideoObject getVideoObj(ShareParamVideo param) {
-        VideoObject videoObject = new VideoObject();
-        videoObject.identify = Utility.generateGUID();
-        videoObject.title = param.getContent();
-        videoObject.description = param.getTitle();
-
-        byte[] thumbData = mImageHelper.buildThumbData(param.getThumb());
-        if (thumbData == null || thumbData.length == 0) {
-            videoObject.thumbData = mImageHelper.buildThumbData(new ShareImage(mShareConfiguration.getDefaultShareImage()));
-        } else {
-            videoObject.thumbData = thumbData;
-        }
-
-        videoObject.actionUrl = param.getTargetUrl();
-
-        ShareVideo video = param.getVideo();
-        if (video != null) {
-            videoObject.dataUrl = video.getVideoSrcUrl();
-            videoObject.dataHdUrl = video.getVideoSrcUrl();
-            videoObject.h5Url = video.getVideoH5Url();
-            videoObject.duration = 10;
-            videoObject.defaultText = video.getDescription();
-        }
-        return videoObject;
-    }
-
-    private void allInOneShare(WeiboMultiMessage weiboMessage) {
-        final SendMultiMessageToWeiboRequest request = new SendMultiMessageToWeiboRequest();
-        request.transaction = String.valueOf(System.currentTimeMillis());
-        request.multiMessage = weiboMessage;
-
+    private void allInOneShare(final WeiboMultiMessage weiboMessage) {
         final String token = getToken();
-        Map<String, String> appConfig = mShareConfiguration.getPlatformConfig().getPlatformDevInfo(SocializeMedia.SINA);
-        final AuthInfo mAuthInfo = new AuthInfo(getContext(), mAppKey,
-                appConfig.get(SharePlatformConfig.REDIRECT_URL), appConfig.get(SharePlatformConfig.SCOPE));
         if (TextUtils.isEmpty(token)) {
             mWeiboMessage = weiboMessage;
-            mSsoHandler = new SsoHandler((Activity) getContext(), mAuthInfo);
+            Log.d(TAG, "authorize when allInOneShare");
+            mSsoHandler = new SsoHandler((Activity) getContext());
             mSsoHandler.authorize(mAuthListener);
         } else {
             mWeiboMessage = null;
@@ -461,32 +336,21 @@ public class SinaShareHandler extends BaseShareHandler {
                 @Override
                 public void run() {
                     postProgressStart();
-                    boolean result = mWeiboShareAPI.sendRequest((Activity) getContext(), request, mAuthInfo, token, mAuthListener);
-                    if (!result) {
-                        if (getShareListener() != null) {
-                            getShareListener().onError(getShareMedia(), 0, null);
-                        }
-                    }
+                    Log.d(TAG, "share message when allInOneShare");
+                    mShareHandler.shareMessage(weiboMessage, false);
                 }
             });
         }
-
     }
 
-    private WeiboAuthListener mAuthListener = new WeiboAuthListener() {
+    private WbAuthListener mAuthListener = new WbAuthListener() {
 
         @Override
-        public void onWeiboException(WeiboException arg0) {
-            if (getShareListener() != null) {
-                getShareListener().onError(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SHARE_ERROR_AUTH_FAILED, arg0);
-            }
-        }
-
-        @Override
-        public void onComplete(Bundle bundle) {
-            Oauth2AccessToken newToken = Oauth2AccessToken.parseAccessToken(bundle);
-            if (newToken.isSessionValid()) {
-                AccessTokenKeeper.writeAccessToken(getContext(), newToken);
+        public void onSuccess(Oauth2AccessToken oauth2AccessToken) {
+            Log.d(TAG, "auth success");
+            mSsoHandler = null;
+            if (oauth2AccessToken.isSessionValid()) {
+                AccessTokenKeeper.writeAccessToken(getContext(), oauth2AccessToken);
                 if (mWeiboMessage != null) {
                     allInOneShare(mWeiboMessage);
                 }
@@ -499,35 +363,56 @@ public class SinaShareHandler extends BaseShareHandler {
             }
 
             listener.onError(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SHARE_ERROR_AUTH_FAILED, new ShareException("无效的token"));
-            mSsoHandler = null;
         }
 
         @Override
-        public void onCancel() {
+        public void cancel() {
+            Log.d(TAG, "auth cancel");
             if (getShareListener() != null) {
                 getShareListener().onCancel(SocializeMedia.SINA);
             }
             mSsoHandler = null;
         }
+
+        @Override
+        public void onFailure(WbConnectErrorMessage wbConnectErrorMessage) {
+            Log.d(TAG, "auth failure");
+            if (getShareListener() != null) {
+                getShareListener().onError(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SHARE_ERROR_AUTH_FAILED,
+                        new Exception(wbConnectErrorMessage.getErrorMessage()));
+            }
+            mSsoHandler = null;
+        }
     };
 
-    public void onResponse(BaseResponse baseResp) {
+    @Override
+    public void onWbShareSuccess() {
+        Log.d(TAG, "share success");
         SocializeListeners.ShareListener listener = getShareListener();
         if (listener == null) {
             return;
         }
+        listener.onSuccess(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SUCCESSED);
+    }
 
-        switch (baseResp.errCode) {
-            case WBConstants.ErrorCode.ERR_OK:
-                listener.onSuccess(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SUCCESSED);
-                break;
-            case WBConstants.ErrorCode.ERR_CANCEL:
-                listener.onCancel(SocializeMedia.SINA);
-                break;
-            case WBConstants.ErrorCode.ERR_FAIL:
-                listener.onError(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED, new ShareException(baseResp.errMsg));
-                break;
+    @Override
+    public void onWbShareCancel() {
+        Log.d(TAG, "share cancel");
+        SocializeListeners.ShareListener listener = getShareListener();
+        if (listener == null) {
+            return;
         }
+        listener.onCancel(SocializeMedia.SINA);
+    }
+
+    @Override
+    public void onWbShareFail() {
+        Log.d(TAG, "share fail");
+        SocializeListeners.ShareListener listener = getShareListener();
+        if (listener == null) {
+            return;
+        }
+        listener.onError(SocializeMedia.SINA, BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED, new ShareException("unknown reason"));
     }
 
     private String getToken() {
@@ -543,12 +428,14 @@ public class SinaShareHandler extends BaseShareHandler {
     public void release() {
         super.release();
         mSsoHandler = null;
-        mWeiboShareAPI = null;
+        mShareHandler = null;
         mWeiboMessage = null;
+        Log.d(TAG, "release");
     }
 
-    private boolean isSinaClientInstalled() {
-        return mWeiboShareAPI != null && mWeiboShareAPI.isWeiboAppInstalled();
+    public boolean isSinaClientInstalled() {
+        WbAppInfo wbAppInfo = WeiboAppManager.getInstance(getContext().getApplicationContext()).getWbAppInfo();
+        return wbAppInfo != null && wbAppInfo.isLegal();
     }
 
     @Override

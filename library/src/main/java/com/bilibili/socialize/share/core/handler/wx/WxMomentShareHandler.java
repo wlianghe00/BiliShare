@@ -23,7 +23,7 @@ import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.shareparam.ShareParamImage;
 import com.bilibili.socialize.share.core.shareparam.ShareParamWebPage;
-import com.tencent.mm.sdk.modelmsg.SendMessageToWX;
+import com.tencent.mm.opensdk.modelmsg.SendMessageToWX;
 
 /**
  * @author Jungly
@@ -50,11 +50,6 @@ public class WxMomentShareHandler extends BaseWxShareHandler {
     @Override
     int getShareType() {
         return SendMessageToWX.Req.WXSceneTimeline;
-    }
-
-    @Override
-    protected SocializeMedia getSocializeType() {
-        return SocializeMedia.WEIXIN_MONMENT;
     }
 
     @Override

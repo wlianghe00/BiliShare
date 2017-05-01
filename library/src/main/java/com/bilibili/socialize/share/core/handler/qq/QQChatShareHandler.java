@@ -20,10 +20,11 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
-import com.bilibili.socialize.share.core.SocializeListeners;
 import com.bilibili.socialize.share.core.SocializeMedia;
+import com.bilibili.socialize.share.core.SocializeListeners;
 import com.bilibili.socialize.share.core.error.InvalidParamException;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
@@ -44,6 +45,7 @@ import com.tencent.tauth.Tencent;
  * @since 2015/10/8
  */
 public class QQChatShareHandler extends BaseQQShareHandler {
+    private static final String TAG = "BShare.qq.chat_handler";
 
     public QQChatShareHandler(Activity context, BiliShareConfiguration configuration) {
         super(context, configuration);
@@ -53,15 +55,14 @@ public class QQChatShareHandler extends BaseQQShareHandler {
     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data, SocializeListeners.ShareListener listener) {
         super.onActivityResult(activity, requestCode, resultCode, data, listener);
         if (requestCode == Constants.REQUEST_QQ_SHARE) {
+            Log.d(TAG, "handle on activity result");
             Tencent.onActivityResultData(requestCode, resultCode, data, mUiListener);
-            if (resultCode == Constants.ACTIVITY_OK) {
-                Tencent.handleResultData(data, mUiListener);
-            }
         }
     }
 
     @Override
     protected void shareText(ShareParamText params) throws ShareException {
+        Log.d(TAG, "share text");
         shareImageText(params, null);
     }
 
@@ -77,6 +78,7 @@ public class QQChatShareHandler extends BaseQQShareHandler {
 
     @Override
     protected void shareWebPage(ShareParamWebPage params) throws ShareException {
+        Log.d(TAG, "share web page");
         shareImageText(params, params.getThumb());
     }
 
@@ -89,6 +91,7 @@ public class QQChatShareHandler extends BaseQQShareHandler {
             throw new InvalidParamException("Audio url is empty or illegal");
         }
 
+        Log.d(TAG, "share audio");
         final Bundle bundle = new Bundle();
         ShareImage thumb = params.getThumb();
         bundle.putInt(QQShare.SHARE_TO_QQ_KEY_TYPE, QQShare.SHARE_TO_QQ_TYPE_AUDIO);
@@ -110,6 +113,7 @@ public class QQChatShareHandler extends BaseQQShareHandler {
 
     @Override
     protected void shareVideo(ShareParamVideo params) throws ShareException {
+        Log.d(TAG, "share video");
         shareImageText(params, params.getThumb());
     }
 
@@ -125,6 +129,7 @@ public class QQChatShareHandler extends BaseQQShareHandler {
             throw new InvalidParamException("Title or target url is empty or illegal");
         }
 
+        Log.d(TAG, "share image text");
         final Bundle bundle = new Bundle();
         bundle.putInt(QQShare.SHARE_TO_QQ_KEY_TYPE, QQShare.SHARE_TO_QQ_TYPE_DEFAULT);
         bundle.putString(QQShare.SHARE_TO_QQ_TITLE, params.getTitle());
@@ -152,6 +157,7 @@ public class QQChatShareHandler extends BaseQQShareHandler {
         mImageHelper.downloadImageIfNeed(image, new Runnable() {
             @Override
             public void run() {
+                Log.d(TAG, "share image");
                 final Bundle bundle = new Bundle();
                 bundle.putInt(QQShare.SHARE_TO_QQ_KEY_TYPE, QQShare.SHARE_TO_QQ_TYPE_IMAGE);
 

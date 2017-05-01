@@ -66,9 +66,9 @@ public abstract class BaseShareHandler extends AbsShareHandler {
     /**
      * 检查配置，比如appKey，appSecret
      */
-    protected abstract void checkConfig() throws Exception;
+    public abstract void checkConfig() throws Exception;
 
-    protected abstract void init() throws Exception;
+    public abstract void init() throws Exception;
 
     protected abstract void shareText(ShareParamText params) throws ShareException;
 

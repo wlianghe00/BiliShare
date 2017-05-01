@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
 import com.bilibili.socialize.share.core.SocializeListeners;
@@ -51,6 +52,7 @@ import java.util.ArrayList;
  * <p/>
  */
 public class QQZoneShareHandler extends BaseQQShareHandler {
+    private static final String TAG = "BShare.qq.zone_handler";
 
     public QQZoneShareHandler(Activity context, BiliShareConfiguration configuration) {
         super(context, configuration);
@@ -60,35 +62,38 @@ public class QQZoneShareHandler extends BaseQQShareHandler {
     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data, SocializeListeners.ShareListener listener) {
         super.onActivityResult(activity, requestCode, resultCode, data, listener);
         if (requestCode == Constants.REQUEST_QZONE_SHARE) {
+            Log.d(TAG, "handle on activity result");
             Tencent.onActivityResultData(requestCode, resultCode, data, mUiListener);
-            if (resultCode == Constants.ACTIVITY_OK) {
-                Tencent.handleResultData(data, mUiListener);
-            }
         }
     }
 
     @Override
     protected void shareText(ShareParamText params) throws ShareException {
+        Log.d(TAG, "share text");
         shareImageText(params, null);
     }
 
     @Override
     protected void shareImage(ShareParamImage params) throws ShareException {
+        Log.d(TAG, "share image");
         shareImageText(params, params.getImage());
     }
 
     @Override
     protected void shareWebPage(ShareParamWebPage params) throws ShareException {
+        Log.d(TAG, "share web page");
         shareImageText(params, params.getThumb());
     }
 
     @Override
     protected void shareAudio(ShareParamAudio params) throws ShareException {
+        Log.d(TAG, "share audio");
         shareImageText(params, params.getThumb());
     }
 
     @Override
     protected void shareVideo(ShareParamVideo params) throws ShareException {
+        Log.d(TAG, "share video");
         shareImageText(params, params.getThumb());
     }
 
@@ -97,6 +102,7 @@ public class QQZoneShareHandler extends BaseQQShareHandler {
             throw new InvalidParamException("Title or target url is empty or illegal");
         }
 
+        Log.d(TAG, "share image text");
         Bundle bundle = new Bundle();
         bundle.putInt(QzoneShare.SHARE_TO_QZONE_KEY_TYPE, QzoneShare.SHARE_TO_QZONE_TYPE_IMAGE_TEXT);
         bundle.putString(QzoneShare.SHARE_TO_QQ_TITLE, params.getTitle());

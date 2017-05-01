@@ -37,12 +37,12 @@ public class CopyShareHandler extends BaseShareHandler {
     }
 
     @Override
-    protected void checkConfig() throws Exception {
+    public void checkConfig() throws Exception {
 
     }
 
     @Override
-    protected void init() throws Exception {
+    public void init() throws Exception {
 
     }
 

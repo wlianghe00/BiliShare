@@ -17,17 +17,27 @@
 package com.bilibili.socialize.share.core;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.handler.IShareHandler;
+import com.bilibili.socialize.share.core.handler.generic.CopyShareHandler;
+import com.bilibili.socialize.share.core.handler.generic.GenericShareHandler;
+import com.bilibili.socialize.share.core.handler.qq.QQShareTransitHandler;
+import com.bilibili.socialize.share.core.handler.sina.SinaShareTransitHandler;
+import com.bilibili.socialize.share.core.handler.wx.WxShareTransitHandler;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.bilibili.socialize.share.core.SocializeMedia.QQ;
+import static com.bilibili.socialize.share.core.SocializeMedia.QZONE;
+import static com.bilibili.socialize.share.core.SocializeMedia.WEIXIN;
+import static com.bilibili.socialize.share.core.SocializeMedia.WEIXIN_MONMENT;
 
 /**
  * @author Jungly
@@ -35,10 +45,12 @@ import java.util.Map;
  * @since 2015/9/31
  */
 public class BiliShare {
+    private static final String TAG = "BShare.main.client";
     private static final Map<String, BiliShare> CLIENT_MAP = new HashMap<>();
+    private static final String CLIENT_NAME_DEFAULT = "_share_client_name_inner_default_";
 
     private IShareHandler mCurrentHandler;
-    private ShareHandlerPool mShareHandlerPool = new ShareHandlerPool();
+    private Map<SocializeMedia, IShareHandler> mHandlerMap = new HashMap<>();
     private BiliShareConfiguration mShareConfiguration;
     private SocializeListeners.ShareListener mOuterShareListener;
 
@@ -53,14 +65,21 @@ public class BiliShare {
             synchronized (CLIENT_MAP) {
                 router = CLIENT_MAP.get(name);
                 if (router == null) {
+                    Log.d(TAG, String.format("create new share client named(%s)", name));
                     BiliShare value = new BiliShare(name);
                     CLIENT_MAP.put(name, value);
                     router = value;
                 }
                 return router;
             }
+        } else {
+            Log.d(TAG, String.format("find existed share client named(%s)", name));
         }
         return router;
+    }
+
+    public static BiliShare global() {
+        return get(CLIENT_NAME_DEFAULT);
     }
 
     private BiliShare(String name) {
@@ -82,16 +101,18 @@ public class BiliShare {
         }
 
         if (mCurrentHandler != null) {
+            Log.w(TAG, "release leaked share handler");
             release(mCurrentHandler.getShareMedia());
         }
 
-        mCurrentHandler = mShareHandlerPool.newHandler(activity, type, mShareConfiguration);
+        mCurrentHandler = newHandler(activity, type, mShareConfiguration);
 
         if (mCurrentHandler != null) {
             try {
                 mOuterShareListener = listener;
 
                 if (params == null) {
+                    Log.e(TAG, "null share params");
                     throw new IllegalArgumentException(("Share param cannot be null"));
                 }
 
@@ -99,40 +120,83 @@ public class BiliShare {
                 mCurrentHandler.share(params, mInnerProxyListener);
 
                 if (mCurrentHandler.isDisposable()) {
+                    Log.d(TAG, "release disposable share handler");
                     release(mCurrentHandler.getShareMedia());
                 }
 
             } catch (ShareException e) {
-                e.printStackTrace();
+                Log.d(TAG, "share exception", e);
                 mInnerProxyListener.onError(type, e.getCode(), e);
             } catch (Exception e) {
+                Log.d(TAG, "share exception", e);
                 mInnerProxyListener.onError(type, BiliShareStatusCode.ST_CODE_SHARE_ERROR_EXCEPTION, e);
-                e.printStackTrace();
             }
         } else {
+            Log.e(TAG, "create handler failed");
             mInnerProxyListener.onError(type, BiliShareStatusCode.ST_CODE_SHARE_ERROR_UNEXPLAINED, new Exception("Unknown share type"));
         }
     }
 
-    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-        if (mCurrentHandler != null) {
-            mCurrentHandler.onActivityResult(activity, requestCode, resultCode, data, mInnerProxyListener);
-        }
+    public IShareHandler currentHandler() {
+        return mCurrentHandler;
     }
 
     private void release(SocializeMedia type) {
+        Log.d(TAG, String.format("========》release client:(%s) 《========", type.name()));
         mOuterShareListener = null;
         if (mCurrentHandler != null) {
             mCurrentHandler.release();
         }
         mCurrentHandler = null;
-        mShareHandlerPool.remove(type);
+        remove(type);
+    }
+
+    private IShareHandler newHandler(Activity context, SocializeMedia type, BiliShareConfiguration shareConfiguration) {
+        IShareHandler handler = null;
+        switch (type) {
+            case WEIXIN:
+                handler = new WxShareTransitHandler(context, shareConfiguration, WEIXIN, mName);
+                break;
+
+            case WEIXIN_MONMENT:
+                handler = new WxShareTransitHandler(context, shareConfiguration, WEIXIN_MONMENT, mName);
+                break;
+
+            case QQ:
+                handler = new QQShareTransitHandler(context, shareConfiguration, QQ, mName);
+                break;
+
+            case QZONE:
+                handler = new QQShareTransitHandler(context, shareConfiguration, QZONE, mName);
+                break;
+
+            case SINA:
+                handler = new SinaShareTransitHandler(context, shareConfiguration, mName);
+                break;
+
+            case COPY:
+                handler = new CopyShareHandler(context, shareConfiguration);
+                break;
+
+            default:
+                handler = new GenericShareHandler(context, shareConfiguration);
+        }
+
+        Log.d(TAG, String.format("create handler type(%s)", handler.getClass().getSimpleName()));
+        mHandlerMap.put(type, handler);
+
+        return handler;
+    }
+
+    private void remove(SocializeMedia type) {
+        mHandlerMap.remove(type);
     }
 
     private IShareHandler.InnerShareListener mInnerProxyListener = new IShareHandler.InnerShareListener() {
 
         @Override
         public void onStart(SocializeMedia type) {
+            Log.d(TAG, String.format("start share:(%s)", type));
             if (mOuterShareListener != null) {
                 mOuterShareListener.onStart(type);
             }
@@ -140,6 +204,7 @@ public class BiliShare {
 
         @Override
         public void onProgress(SocializeMedia type, String progressDesc) {
+            Log.d(TAG, String.format("share on progress:(%s, %s)", type, progressDesc));
             if (mCurrentHandler != null && mCurrentHandler.getContext() != null) {
                 Toast.makeText(mCurrentHandler.getContext(), progressDesc, Toast.LENGTH_SHORT).show();
             }
@@ -147,6 +212,7 @@ public class BiliShare {
 
         @Override
         public void onSuccess(SocializeMedia type, int code) {
+            Log.d(TAG, "share success");
             if (mOuterShareListener != null) {
                 mOuterShareListener.onSuccess(type, code);
             }
@@ -155,6 +221,7 @@ public class BiliShare {
 
         @Override
         public void onError(SocializeMedia type, int code, Throwable error) {
+            Log.d(TAG, "share failed");
             if (mOuterShareListener != null) {
                 mOuterShareListener.onError(type, code, error);
             }
@@ -163,6 +230,7 @@ public class BiliShare {
 
         @Override
         public void onCancel(SocializeMedia type) {
+            Log.d(TAG, "share canceled");
             if (mOuterShareListener != null) {
                 mOuterShareListener.onCancel(type);
             }

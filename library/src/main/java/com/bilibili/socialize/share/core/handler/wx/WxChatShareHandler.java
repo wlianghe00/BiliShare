@@ -20,7 +20,7 @@ import android.app.Activity;
 
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
 import com.bilibili.socialize.share.core.SocializeMedia;
-import com.tencent.mm.sdk.modelmsg.SendMessageToWX;
+import com.tencent.mm.opensdk.modelmsg.SendMessageToWX;
 
 /**
  * @author Jungly
@@ -36,11 +36,6 @@ public class WxChatShareHandler extends BaseWxShareHandler {
     @Override
     int getShareType() {
         return SendMessageToWX.Req.WXSceneSession;
-    }
-
-    @Override
-    protected SocializeMedia getSocializeType() {
-        return SocializeMedia.WEIXIN;
     }
 
     @Override

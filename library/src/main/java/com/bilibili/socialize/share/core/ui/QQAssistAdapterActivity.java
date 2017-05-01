@@ -18,6 +18,7 @@ package com.bilibili.socialize.share.core.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.tencent.connect.common.AssistActivity;
 
@@ -29,6 +30,8 @@ import com.tencent.connect.common.AssistActivity;
  * @since 2015/10/21
  */
 public class QQAssistAdapterActivity extends AssistActivity {
+    private static final String TAG = "BShare.qq.assistAdp";
+
     private boolean mIsRestartFromQQSDK;
     private boolean mHasActivityResultCalled;
     private boolean mHasOnIntentCalled;
@@ -40,6 +43,7 @@ public class QQAssistAdapterActivity extends AssistActivity {
             if (bundle != null) {
                 mIsRestartFromQQSDK = bundle.getBoolean("RESTART_FLAG");
             }
+            Log.d(TAG, String.format("on create: is restart(%s)", mIsRestartFromQQSDK));
         } catch (Exception e) {
             e.printStackTrace();
             finish();
@@ -49,11 +53,14 @@ public class QQAssistAdapterActivity extends AssistActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, String.format("on resume: intentCalled(%s), actResult(%s), isFinishing(%s)"
+                , mHasOnIntentCalled, mHasActivityResultCalled, isFinishing()));
         if (mHasOnIntentCalled || mHasActivityResultCalled) {
             return;
         }
 
         if (mIsRestartFromQQSDK && !isFinishing()) {
+            Log.d(TAG, "finish manual when onResume");
             finish();
         }
     }
@@ -61,12 +68,14 @@ public class QQAssistAdapterActivity extends AssistActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         mHasOnIntentCalled = true;
+        Log.d(TAG, "onNewIntent called");
         super.onNewIntent(intent);
     }
 
     @Override
     protected void onActivityResult(int i, int i1, Intent intent) {
         mHasActivityResultCalled = true;
+        Log.d(TAG, "onActivityResult called");
         super.onActivityResult(i, i1, intent);
     }
 }

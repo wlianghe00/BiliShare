@@ -98,7 +98,7 @@ public class ShareAudio implements Parcelable {
         mDescription = in.readString();
     }
 
-    public static final Creator<ShareAudio> CREATOR = new Creator<ShareAudio>() {
+    public static final Parcelable.Creator<ShareAudio> CREATOR = new Parcelable.Creator<ShareAudio>() {
         public ShareAudio createFromParcel(Parcel source) {
             return new ShareAudio(source);
         }

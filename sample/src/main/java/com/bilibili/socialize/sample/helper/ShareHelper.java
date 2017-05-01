@@ -5,7 +5,6 @@
 package com.bilibili.socialize.sample.helper;
 
 import android.content.Context;
-import android.content.Intent;
 import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.widget.AdapterView;
@@ -53,12 +52,6 @@ public final class ShareHelper {
                 .sina(SINA_APPKEY, null, null)
                 .build();
         shareClient().config(configuration);
-    }
-
-    public void onActivityResult(FragmentActivity context, int requestCode, int resultCode, Intent data) {
-        if (context == mContext) {
-            shareClient().onActivityResult(context, requestCode, resultCode, data);
-        }
     }
 
     public void setCallback(Callback mCallback) {
@@ -149,7 +142,7 @@ public final class ShareHelper {
     }
 
     public static BiliShare shareClient()  {
-        return BiliShare.get("global");
+        return BiliShare.global();
     }
 
     public interface Callback {

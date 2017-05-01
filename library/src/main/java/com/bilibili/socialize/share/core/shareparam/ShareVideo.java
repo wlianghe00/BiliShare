@@ -99,7 +99,7 @@ public class ShareVideo implements Parcelable {
         mDescription = in.readString();
     }
 
-    public static final Creator<ShareVideo> CREATOR = new Creator<ShareVideo>() {
+    public static final Parcelable.Creator<ShareVideo> CREATOR = new Parcelable.Creator<ShareVideo>() {
         public ShareVideo createFromParcel(Parcel source) {
             return new ShareVideo(source);
         }

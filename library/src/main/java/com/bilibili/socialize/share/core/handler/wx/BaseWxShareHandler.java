@@ -17,17 +17,13 @@
 package com.bilibili.socialize.share.core.handler.wx;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.bilibili.socialize.share.R;
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
 import com.bilibili.socialize.share.core.SharePlatformConfig;
-import com.bilibili.socialize.share.core.SocializeListeners;
 import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.InvalidParamException;
@@ -41,15 +37,15 @@ import com.bilibili.socialize.share.core.shareparam.ShareParamText;
 import com.bilibili.socialize.share.core.shareparam.ShareParamVideo;
 import com.bilibili.socialize.share.core.shareparam.ShareParamWebPage;
 import com.bilibili.socialize.share.core.shareparam.ShareVideo;
-import com.tencent.mm.sdk.modelmsg.SendMessageToWX;
-import com.tencent.mm.sdk.modelmsg.WXImageObject;
-import com.tencent.mm.sdk.modelmsg.WXMediaMessage;
-import com.tencent.mm.sdk.modelmsg.WXMusicObject;
-import com.tencent.mm.sdk.modelmsg.WXTextObject;
-import com.tencent.mm.sdk.modelmsg.WXVideoObject;
-import com.tencent.mm.sdk.modelmsg.WXWebpageObject;
-import com.tencent.mm.sdk.openapi.IWXAPI;
-import com.tencent.mm.sdk.openapi.WXAPIFactory;
+import com.tencent.mm.opensdk.modelmsg.SendMessageToWX;
+import com.tencent.mm.opensdk.modelmsg.WXImageObject;
+import com.tencent.mm.opensdk.modelmsg.WXMediaMessage;
+import com.tencent.mm.opensdk.modelmsg.WXMusicObject;
+import com.tencent.mm.opensdk.modelmsg.WXTextObject;
+import com.tencent.mm.opensdk.modelmsg.WXVideoObject;
+import com.tencent.mm.opensdk.modelmsg.WXWebpageObject;
+import com.tencent.mm.opensdk.openapi.IWXAPI;
+import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 
 import java.util.Map;
 
@@ -59,25 +55,17 @@ import java.util.Map;
  * @since 2015/9/31 18:43
  */
 public abstract class BaseWxShareHandler extends BaseShareHandler {
-    public static final String ACTION_RESULT = "com.bilibili.socialize.share.wx.result";
-    public static final String BUNDLE_STATUS_CODE = "status_code";
-    public static final String BUNDLE_STATUS_MSG = "status_msg";
+    private static final String TAG = "BShare.wx.handler";
 
-    protected static final int IMAGE_MAX = 32 * 1024;
-    protected static final int IMAGE_WIDTH = 600;
-    protected static final int IMAGE_HEIGHT = 800;
+    private static final int IMAGE_MAX = 32 * 1024;
+    private static final int IMAGE_WIDTH = 600;
+    private static final int IMAGE_HEIGHT = 800;
 
     private String mAppId;
-    public IWXAPI mIWXAPI;
+    private IWXAPI mIWXAPI;
 
     public BaseWxShareHandler(Activity context, BiliShareConfiguration configuration) {
         super(context, configuration);
-        try {
-            IntentFilter filter = new IntentFilter(ACTION_RESULT);
-            context.registerReceiver(mResultReceiver, filter);
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
     }
 
     private Map<String, String> getAppConfig() {
@@ -86,7 +74,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
     }
 
     @Override
-    protected void checkConfig() throws Exception {
+    public void checkConfig() throws Exception {
         if (!TextUtils.isEmpty(mAppId)) {
             return;
         }
@@ -98,7 +86,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
     }
 
     @Override
-    protected void init() throws Exception {
+    public void init() throws Exception {
         if (mIWXAPI == null) {
             mIWXAPI = WXAPIFactory.createWXAPI(getContext(), mAppId, true);
             if (mIWXAPI.isWXAppInstalled()) {
@@ -131,6 +119,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
         req.transaction = buildTransaction("textshare");
         req.message = msg;
         req.scene = getShareType();
+        Log.d(TAG, "start share text");
         shareOnMainThread(req);
     }
 
@@ -149,6 +138,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
                 req.transaction = buildTransaction("imgshareappdata");
                 req.message = msg;
                 req.scene = getShareType();
+                Log.d(TAG, "start share image");
                 shareOnMainThread(req);
             }
         });
@@ -192,6 +182,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
                 req.transaction = buildTransaction("webpage");
                 req.message = msg;
                 req.scene = getShareType();
+                Log.d(TAG, "start share webpage");
                 shareOnMainThread(req);
             }
         });
@@ -223,6 +214,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
                 req.transaction = buildTransaction("music");
                 req.message = msg;
                 req.scene = getShareType();
+                Log.d(TAG, "start share audio");
                 shareOnMainThread(req);
             }
         });
@@ -254,12 +246,13 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
                 req.transaction = buildTransaction("video");
                 req.message = msg;
                 req.scene = getShareType();
+                Log.d(TAG, "start share video");
                 shareOnMainThread(req);
             }
         });
     }
 
-    protected String buildTransaction(final String type) {
+    private String buildTransaction(final String type) {
         return (type == null) ? String.valueOf(System.currentTimeMillis()) : type + System.currentTimeMillis();
     }
 
@@ -278,36 +271,9 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
 
     @Override
     public void release() {
-        try {
-            if (getContext() != null) {
-                getContext().unregisterReceiver(mResultReceiver);
-            }
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
+        Log.d(TAG, "release");
         super.release();
     }
-
-    private BroadcastReceiver mResultReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            SocializeListeners.ShareListener listener = getShareListener();
-            if (intent == null || listener == null) {
-                return;
-            }
-
-            int code = intent.getIntExtra(BUNDLE_STATUS_CODE, -1);
-            String msg = intent.getStringExtra(BUNDLE_STATUS_MSG);
-            if (code == BiliShareStatusCode.ST_CODE_SUCCESSED) {
-                listener.onSuccess(getSocializeType(), BiliShareStatusCode.ST_CODE_SUCCESSED);
-            } else if (code == BiliShareStatusCode.ST_CODE_ERROR) {
-                listener.onError(getSocializeType(), BiliShareStatusCode.ST_CODE_SHARE_ERROR_SHARE_FAILED,
-                        new ShareException(TextUtils.isEmpty(msg) ? "unknown" : msg));
-            } else if (code == BiliShareStatusCode.ST_CODE_ERROR_CANCEL) {
-                listener.onCancel(getSocializeType());
-            }
-        }
-    };
 
     @Override
     protected boolean isNeedActivityContext() {
@@ -315,7 +281,5 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
     }
 
     abstract int getShareType();
-
-    protected abstract SocializeMedia getSocializeType();
 
 }
