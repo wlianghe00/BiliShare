@@ -22,13 +22,12 @@ public class QQAssistActivity extends BaseAssistActivity<BaseQQShareHandler> {
 
     private boolean mIsFirstIntent;
 
-    public static void start(Activity act, BaseShareParam params, BiliShareConfiguration configuration, SocializeMedia type, String clientName) {
+    public static void start(Activity act, BaseShareParam params, BiliShareConfiguration configuration, SocializeMedia type, int reqCode) {
         Intent intent = new Intent(act, QQAssistActivity.class);
         intent.putExtra(KEY_PARAM, params);
         intent.putExtra(KEY_CONFIG, configuration);
         intent.putExtra(KEY_TYPE, type.name());
-        intent.putExtra(KEY_CLIENT_NAME, clientName);
-        act.startActivity(intent);
+        act.startActivityForResult(intent, reqCode);
         act.overridePendingTransition(0, 0);
     }
 

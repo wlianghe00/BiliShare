@@ -24,20 +24,13 @@ import android.widget.Toast;
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.ShareException;
 import com.bilibili.socialize.share.core.handler.IShareHandler;
+import com.bilibili.socialize.share.core.handler.ShareTransitHandler;
 import com.bilibili.socialize.share.core.handler.generic.CopyShareHandler;
 import com.bilibili.socialize.share.core.handler.generic.GenericShareHandler;
-import com.bilibili.socialize.share.core.handler.qq.QQShareTransitHandler;
-import com.bilibili.socialize.share.core.handler.sina.SinaShareTransitHandler;
-import com.bilibili.socialize.share.core.handler.wx.WxShareTransitHandler;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.bilibili.socialize.share.core.SocializeMedia.QQ;
-import static com.bilibili.socialize.share.core.SocializeMedia.QZONE;
-import static com.bilibili.socialize.share.core.SocializeMedia.WEIXIN;
-import static com.bilibili.socialize.share.core.SocializeMedia.WEIXIN_MONMENT;
 
 /**
  * @author Jungly
@@ -155,23 +148,11 @@ public class BiliShare {
         IShareHandler handler = null;
         switch (type) {
             case WEIXIN:
-                handler = new WxShareTransitHandler(context, shareConfiguration, WEIXIN, mName);
-                break;
-
             case WEIXIN_MONMENT:
-                handler = new WxShareTransitHandler(context, shareConfiguration, WEIXIN_MONMENT, mName);
-                break;
-
             case QQ:
-                handler = new QQShareTransitHandler(context, shareConfiguration, QQ, mName);
-                break;
-
             case QZONE:
-                handler = new QQShareTransitHandler(context, shareConfiguration, QZONE, mName);
-                break;
-
             case SINA:
-                handler = new SinaShareTransitHandler(context, shareConfiguration, mName);
+                handler = new ShareTransitHandler(context, shareConfiguration, type, mName);
                 break;
 
             case COPY:

@@ -6,15 +6,12 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.bilibili.socialize.share.core.BiliShare;
 import com.bilibili.socialize.share.core.BiliShareConfiguration;
 import com.bilibili.socialize.share.core.SocializeListeners;
 import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.error.BiliShareStatusCode;
 import com.bilibili.socialize.share.core.error.ShareException;
-import com.bilibili.socialize.share.core.handler.AbsShareTransitHandler;
 import com.bilibili.socialize.share.core.handler.BaseShareHandler;
-import com.bilibili.socialize.share.core.handler.IShareHandler;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
 
 /**
@@ -27,11 +24,9 @@ public abstract class BaseAssistActivity<H extends BaseShareHandler> extends Act
     public static final String KEY_PARAM = "share_param";
     public static final String KEY_CONFIG = "share_config";
     public static final String KEY_TYPE = "share_type";
-    public static final String KEY_CLIENT_NAME = "client_name";
 
     protected BiliShareConfiguration mShareConfig;
     protected BaseShareParam mShareParam;
-    protected String mClientName;
     protected SocializeMedia mSocializeMedia;
 
     protected H mShareHandler;
@@ -72,7 +67,6 @@ public abstract class BaseAssistActivity<H extends BaseShareHandler> extends Act
         mShareConfig = intent.getParcelableExtra(KEY_CONFIG);
         mShareParam = intent.getParcelableExtra(KEY_PARAM);
         String type = intent.getStringExtra(KEY_TYPE);
-        mClientName = intent.getStringExtra(KEY_CLIENT_NAME);
         if (!TextUtils.isEmpty(type)) {
             mSocializeMedia = SocializeMedia.valueOf(type);
         }
@@ -135,86 +129,51 @@ public abstract class BaseAssistActivity<H extends BaseShareHandler> extends Act
     }
 
     protected void finishWithSuccessResult() {
-        onSuccess(mSocializeMedia, BiliShareStatusCode.ST_CODE_SUCCESSED);
+        setResult(0, BiliShareDelegateActivity.createResult(BiliShareDelegateActivity.RESULT_SUCCESS));
+        finish();
     }
 
     protected void finishWithFailResult(String msg) {
-        onError(mSocializeMedia, BiliShareStatusCode.ST_CODE_ERROR, new ShareException(msg));
+        setResult(0, BiliShareDelegateActivity.createResult(BiliShareDelegateActivity.RESULT_FAIL, msg));
+        finish();
     }
 
     protected void finishWithCancelResult() {
-        onCancel(mSocializeMedia);
+        setResult(0, BiliShareDelegateActivity.createResult(BiliShareDelegateActivity.RESULT_CANCEL));
+        finish();
     }
 
     @Override
     public void onStart(SocializeMedia type) {
         Log.d(tag(), "on inner share start");
-        AbsShareTransitHandler handler = getShareHandler();
-        if (handler != null) {
-            handler.onStart(type);
-        }
+        sendBroadcast(BiliShareDelegateActivity.createStartIntent());
     }
 
     @Override
     public void onProgress(SocializeMedia type, String progressDesc) {
         Log.d(tag(), "on inner share progress");
-        AbsShareTransitHandler handler = getShareHandler();
-        if (handler != null) {
-            handler.onProgress(type, progressDesc);
-        }
+        sendBroadcast(BiliShareDelegateActivity.createProgressIntent(progressDesc));
     }
 
     @Override
     public void onSuccess(SocializeMedia type, int code) {
         Log.i(tag(), "----->on inner share success<-----");
         mHasGetResult = true;
-        AbsShareTransitHandler handler = getShareHandler();
-        if (handler != null) {
-            handler.onSuccess(type, code);
-        }
-        finish();
+        finishWithSuccessResult();
     }
 
     @Override
     public void onError(SocializeMedia type, int code, Throwable error) {
         Log.i(tag(), "----->on inner share fail<-----");
         mHasGetResult = true;
-        AbsShareTransitHandler handler = getShareHandler();
-        if (handler != null) {
-            handler.onError(type, code, error);
-        }
-        finish();
+        finishWithFailResult(error != null ? error.getMessage() : null);
     }
 
     @Override
     public void onCancel(SocializeMedia type) {
         Log.i(tag(), "----->on inner share cancel<-----");
         mHasGetResult = true;
-        AbsShareTransitHandler handler = getShareHandler();
-        if (handler != null) {
-            handler.onCancel(type);
-        }
-        finish();
-    }
-
-    protected AbsShareTransitHandler getShareHandler() {
-        if (TextUtils.isEmpty(mClientName)) {
-            Log.e(tag(), "null client name");
-            return null;
-        }
-
-        BiliShare share = BiliShare.get(mClientName);
-        IShareHandler handler = share.currentHandler();
-        if (handler == null) {
-            Log.e(tag(), "null handler");
-            return null;
-        }
-        if (!(handler instanceof AbsShareTransitHandler)) {
-            Log.e(tag(), "wrong handler type");
-            return null;
-        }
-
-        return (AbsShareTransitHandler) handler;
+        finishWithCancelResult();
     }
 
     @Override

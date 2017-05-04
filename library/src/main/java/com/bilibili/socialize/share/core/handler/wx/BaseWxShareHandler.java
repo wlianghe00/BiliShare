@@ -273,6 +273,9 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
     public void release() {
         Log.d(TAG, "release");
         super.release();
+        if (mIWXAPI != null) {
+            mIWXAPI.detach();
+        }
     }
 
     @Override

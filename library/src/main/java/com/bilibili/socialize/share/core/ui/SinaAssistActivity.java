@@ -28,7 +28,7 @@ import com.bilibili.socialize.share.core.handler.sina.SinaShareHandler;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
 
 /**
- * 处理微博分享，相当于QQ的{@link com.tencent.connect.common.AssistActivity}
+ * 处理微博分享
  *
  * @author Jungly
  * @email jungly.ik@gmail.com
@@ -43,13 +43,12 @@ public class SinaAssistActivity extends BaseAssistActivity<SinaShareHandler> {
 
     private boolean mIsFirstIntent;
 
-    public static void start(Activity act, BaseShareParam params, BiliShareConfiguration configuration, String clientName) {
+    public static void start(Activity act, BaseShareParam params, BiliShareConfiguration configuration, int reqCode) {
         Intent intent = new Intent(act, SinaAssistActivity.class);
         intent.putExtra(KEY_PARAM, params);
         intent.putExtra(KEY_CONFIG, configuration);
-        intent.putExtra(KEY_CLIENT_NAME, clientName);
         intent.putExtra(KEY_TYPE, SocializeMedia.SINA.name());
-        act.startActivity(intent);
+        act.startActivityForResult(intent, reqCode);
         act.overridePendingTransition(0, 0);
     }
 

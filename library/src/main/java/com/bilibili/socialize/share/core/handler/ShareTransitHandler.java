@@ -8,16 +8,22 @@ import com.bilibili.socialize.share.core.BiliShareConfiguration;
 import com.bilibili.socialize.share.core.SocializeListeners;
 import com.bilibili.socialize.share.core.SocializeMedia;
 import com.bilibili.socialize.share.core.shareparam.BaseShareParam;
+import com.bilibili.socialize.share.core.ui.BiliShareDelegateActivity;
 
 /**
  * @author Jungly
  * @email jungly.ik@gmail.com
  * @since 2017/04/28
  */
-public abstract class AbsShareTransitHandler extends AbsShareHandler {
+public class ShareTransitHandler extends AbsShareHandler {
+    private static final String TAG = "BShare.transit.";
+    private SocializeMedia mTypeName;
+    private String mClientName;
 
-    public AbsShareTransitHandler(Activity context, BiliShareConfiguration configuration) {
+    public ShareTransitHandler(Activity context, BiliShareConfiguration configuration, SocializeMedia type, String clientName) {
         super(context, configuration);
+        mTypeName = type;
+        mClientName = clientName;
     }
 
     @Override
@@ -30,19 +36,24 @@ public abstract class AbsShareTransitHandler extends AbsShareHandler {
             @Override
             public void run() {
                 Log.d(tag(), "start intent to assist act");
-                onJumpToAssist((Activity) context, params);
+                BiliShareDelegateActivity.start((Activity) context, params, mShareConfiguration, mTypeName, mClientName);
             }
         });
     }
-
-    protected abstract void onJumpToAssist(Activity act, BaseShareParam params);
 
     @Override
     protected final boolean isNeedActivityContext() {
         return true;
     }
 
-    protected abstract String tag();
+    private String tag() {
+        return TAG + mTypeName;
+    }
+
+    @Override
+    public SocializeMedia getShareMedia() {
+        return mTypeName;
+    }
 
     public void onStart(SocializeMedia type) {
         Log.d(tag(), "on share start");

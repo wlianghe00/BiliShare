@@ -3,8 +3,6 @@
 
 支持分享到微博、QQ聊天、QQ空间、微信聊天、微信朋友圈，系统分享等。
 
-QQ群：397462257。
-
 ## 预览
  - 下载demo [bilibili][1]
  - screenshot
@@ -19,6 +17,7 @@ QQ群：397462257。
  "biliShare"是核心库(必需)，"biliShare-util"是分享的选择器(非必需)，如上截图所示.
 
 ```
+
 allprojects {
     repositories {
         jcenter()
@@ -27,8 +26,8 @@ allprojects {
 }
 
 dependencies {
-    compile 'com.jungly.socialize:biliShare:0.1.07' //必需
-    compile 'com.jungly.socialize:biliShare-util:0.1.07@aar' //非必需
+    compile 'com.jungly.socialize:biliShare:0.1.0701' //必需
+    compile 'com.jungly.socialize:biliShare-util:0.1.0701@aar' //非必需
 }
 ```
 
@@ -90,8 +89,8 @@ public class WXEntryActivity extends BaseWXEntryActivity {
 
 ## 版本
 |版本|时间|变更|
-|-|-|-|
-|0.1.07|2017-05-02|1，升级微博SDK至2.0.3；<br/>2，升级QQ SDK至5788；<br/>3，升级微信SDK至最新；<br/>4，去除BiliShare的onActivityResult()。<br/>5，解决若干bug。|
+| :-- | :-- | :-- |
+|0.1.0701|2017-05-05|1，升级微博SDK至2.0.3；<br/>2，升级QQ SDK至5788；<br/>3，升级微信SDK至1.1.6；<br/>4，去除BiliShare的onActivityResult()。<br/>5，解决若干bug。|
 |0.1.06|2017-04-24|支持多BiliShare实例，方便多业务隔离|
 |......|||
 

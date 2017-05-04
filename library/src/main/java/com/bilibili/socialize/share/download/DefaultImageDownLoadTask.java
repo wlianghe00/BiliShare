@@ -58,7 +58,6 @@ public class DefaultImageDownLoadTask extends Thread {
     @Override
     public void run() {
         super.run();
-        publishProgress(0);
         File tmpFile = new File(mFilePath + TEMP_EXTENSION);
         File parentFile = tmpFile.getParentFile();
         if (!parentFile.isDirectory() || (!parentFile.exists() && !parentFile.mkdirs())) {
@@ -119,18 +118,6 @@ public class DefaultImageDownLoadTask extends Thread {
         }
 
         onPostExecute(mFilePath);
-    }
-
-    protected void publishProgress(final Integer... values) {
-        if (values != null && values.length > 0 && values[0] == 0 && mDownLoadListener != null) {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d(TAG, "image download start");
-                    mDownLoadListener.onStart();
-                }
-            });
-        }
     }
 
     protected void onPostExecute(final String filePath) {
