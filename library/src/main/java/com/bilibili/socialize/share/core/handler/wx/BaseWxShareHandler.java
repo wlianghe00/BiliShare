@@ -174,7 +174,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
                 webpage.webpageUrl = params.getTargetUrl();
 
                 WXMediaMessage msg = new WXMediaMessage(webpage);
-                msg.title = params.getTitle();
+                msg.title = params.getTitle(); 
                 msg.description = params.getContent();
                 msg.thumbData = mImageHelper.buildThumbData(params.getThumb());
 
