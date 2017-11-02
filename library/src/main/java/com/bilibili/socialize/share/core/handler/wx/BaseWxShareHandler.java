@@ -159,7 +159,7 @@ public abstract class BaseWxShareHandler extends BaseShareHandler {
             imgObj.imageData = mImageHelper.buildThumbData(image, IMAGE_MAX, IMAGE_WIDTH, IMAGE_HEIGHT, false);
         }
 
-        return imgObj;
+        return imgObj; 
     }
 
     @Override
